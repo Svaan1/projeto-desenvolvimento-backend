@@ -1,0 +1,19 @@
+# IDEs
+.idea/
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries
+*.test
+
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
+.env
