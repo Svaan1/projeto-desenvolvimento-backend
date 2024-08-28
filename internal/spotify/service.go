@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -158,6 +159,8 @@ func (spotify *service) Search(query, queryType string) (SearchResponse, error) 
 	params.Set("q", query)
 	params.Set("type", queryType)
 	req.URL.RawQuery = params.Encode()
+
+	log.Println("Searching for:", query)
 
 	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
 	req.Header.Add("Content-Type", "application/json")

@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"backendProject/internal/quiz"
 	"backendProject/internal/spotify"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+)
+
+const (
+	baseURL = "/api/v1"
 )
 
 func NewRouter() *chi.Mux {
@@ -27,6 +32,12 @@ func NewRouter() *chi.Mux {
 	r.Get("/tracks", spotifyHandler.GetTracksHandler)
 	r.Get("/artists", spotifyHandler.GetArtistsHandler)
 	r.Get("/search", spotifyHandler.SearchHandler)
+
+	// Quiz
+	quizService := quiz.NewService(spotifyService)
+	quizHandler := quiz.NewHandler(quizService)
+
+	r.Get(baseURL+"/quiz", quizHandler.GetTodaysQuizHandler)
 
 	return r
 }
