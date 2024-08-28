@@ -139,3 +139,42 @@ func (spotify *service) GetArtists(artistIds []string) (ArtistResponse, error) {
 
 	return artistResponse, nil
 }
+
+func (spotify *service) Search(query, queryType string) (SearchResponse, error) {
+	url := spotifyBaseURL + "/search"
+	var searchResponse SearchResponse
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return searchResponse, err
+	}
+
+	token, err := spotify.getAccessToken()
+	if err != nil {
+		return searchResponse, err
+	}
+
+	params := req.URL.Query()
+	params.Set("q", query)
+	params.Set("type", queryType)
+	req.URL.RawQuery = params.Encode()
+
+	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
+	req.Header.Add("Content-Type", "application/json")
+	res, err := spotify.client.Do(req)
+	if err != nil {
+		return searchResponse, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return searchResponse, errors.New("Spotify HTTP Status: " + res.Status)
+	}
+
+	err = json.NewDecoder(res.Body).Decode(&searchResponse)
+	if err != nil {
+		return searchResponse, err
+	}
+
+	return searchResponse, nil
+}

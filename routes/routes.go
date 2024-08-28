@@ -26,6 +26,7 @@ func NewRouter() *chi.Mux {
 	r.Get("/albums", spotifyHandler.GetAlbumsHandler)
 	r.Get("/tracks", spotifyHandler.GetTracksHandler)
 	r.Get("/artists", spotifyHandler.GetArtistsHandler)
+	r.Get("/search", spotifyHandler.SearchHandler)
 
 	return r
 }

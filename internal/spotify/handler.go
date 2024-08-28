@@ -1,7 +1,7 @@
 package spotify
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 )
@@ -10,6 +10,7 @@ type Service interface {
 	GetAlbums(albumIds []string) (AlbumResponse, error)
 	GetTracks(trackIds []string) (TrackResponse, error)
 	GetArtists(artistIds []string) (ArtistResponse, error)
+	Search(query, queryType string) (SearchResponse, error)
 }
 
 type Handler struct {
@@ -38,18 +39,18 @@ func (h *Handler) GetAlbumsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{ "albums": %v }`, albums)
+	json.NewEncoder(w).Encode(albums)
 }
 
 func (h *Handler) GetTracksHandler(w http.ResponseWriter, r *http.Request) {
-	tracks, err := h.Service.GetTracks([]string{"4iV5W9uYEdYUVa79Axb7Rh", "1301WleyT98MSxVHPZCA6M", "2VQc9orzwE6a5qFfy54P6e"})
+	tracks, err := h.Service.GetTracks([]string{"2vjoV2tKJMfhLCPjPa9dWt", "1301WleyT98MSxVHPZCA6M", "2VQc9orzwE6a5qFfy54P6e"})
 	if err != nil {
 		log.Printf("error getting tracks: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{ "tracks": %v }`, tracks)
+	json.NewEncoder(w).Encode(tracks)
 }
 
 func (h *Handler) GetArtistsHandler(w http.ResponseWriter, r *http.Request) {
@@ -60,5 +61,30 @@ func (h *Handler) GetArtistsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{ "artists": %v }`, artists)
+	json.NewEncoder(w).Encode(artists)
+}
+
+func (h *Handler) SearchHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		http.Error(w, "missing query parameter", http.StatusBadRequest)
+		return
+	}
+
+	queryType := r.URL.Query().Get("t")
+
+	if queryType == "" {
+		http.Error(w, "missing type parameter", http.StatusBadRequest)
+		return
+	}
+
+	search, err := h.Service.Search(query, queryType)
+	if err != nil {
+		log.Printf("error searching: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(search)
+
 }
