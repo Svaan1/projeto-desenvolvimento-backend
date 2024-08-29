@@ -25,8 +25,8 @@ func NewService(spotifyService spotify.Service) *service {
 // in Spotify's API and maps the data to a Quiz object.
 //
 // Returns:
-// - A Quiz object containing the generated quiz data.
-// - An error if the quiz generation fails.
+//   - A Quiz object containing the generated quiz data.
+//   - An error if the quiz generation fails.
 func (s *service) GetTodaysQuiz() (Quiz, error) {
 	// early return if quiz was already generated today
 	if !s.todaysQuiz.CreatedAt.IsZero() && time.Since(s.todaysQuiz.CreatedAt) < 24*time.Hour {
@@ -81,11 +81,11 @@ func (s *service) GetTodaysQuiz() (Quiz, error) {
 // and returns the constructed Quiz.
 //
 // Parameters:
-// - track: A Spotify track to be used in the quiz.
-// - artists: A slice of Spotify artists to be included in the quiz.
+//   - track: A Spotify track to be used in the quiz.
+//   - artists: A slice of Spotify artists to be included in the quiz.
 //
 // Returns:
-// - A Quiz object containing the mapped track, album, and artist data.
+//   - A Quiz object containing the mapped track, album, and artist data.
 func buildQuiz(track spotify.Track, artists []spotify.Artist) Quiz {
 	return Quiz{
 		Artists:   mapArtists(artists),
@@ -98,10 +98,10 @@ func buildQuiz(track spotify.Track, artists []spotify.Artist) Quiz {
 // mapArtists converts a slice of Spotify artists to a slice of quizArtist objects.
 //
 // Parameters:
-// - artists: A slice of Spotify artists to be mapped.
+//   - artists: A slice of Spotify artists to be mapped.
 //
 // Returns:
-// - A slice of quizArtist objects containing the mapped artist data.
+//   - A slice of quizArtist objects containing the mapped artist data.
 func mapArtists(artists []spotify.Artist) []quizArtist {
 	mappedArtists := make([]quizArtist, len(artists))
 	for i, artist := range artists {
@@ -117,10 +117,10 @@ func mapArtists(artists []spotify.Artist) []quizArtist {
 // mapAlbum converts a Spotify album to a quizAlbum object.
 //
 // Parameters:
-// - album: A Spotify album to be mapped.
+//   - album: A Spotify album to be mapped.
 //
 // Returns:
-// - A quizAlbum object containing the mapped album data.
+//   - A quizAlbum object containing the mapped album data.
 func mapAlbum(album spotify.Album) quizAlbum {
 	return quizAlbum{
 		Id:          album.Id,
@@ -133,10 +133,10 @@ func mapAlbum(album spotify.Album) quizAlbum {
 // mapTrack converts a Spotify track to a quizSong object.
 //
 // Parameters:
-// - track: A Spotify track to be mapped.
+//   - track: A Spotify track to be mapped.
 //
 // Returns:
-// - A quizSong object containing the mapped track data.
+//   - A quizSong object containing the mapped track data.
 func mapTrack(track spotify.Track) quizSong {
 	return quizSong{
 		Id:           track.Id,
