@@ -1,5 +1,12 @@
 package spotify
 
+type Service interface {
+	GetAlbums(albumIds []string) (AlbumResponse, error)
+	GetTracks(trackIds []string) (TrackResponse, error)
+	GetArtists(artistIds []string) (ArtistResponse, error)
+	Search(query, queryType string) (SearchResponse, error)
+}
+
 type SpotifyAuthResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`

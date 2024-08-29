@@ -7,16 +7,12 @@ import (
 	"time"
 )
 
-type SpotifyService interface {
-	Search(query, queryType string) (spotify.SearchResponse, error)
-}
-
 type service struct {
 	todaysQuiz     Quiz
-	spotifyService SpotifyService
+	spotifyService spotify.Service
 }
 
-func NewService(spotifyService SpotifyService) *service {
+func NewService(spotifyService spotify.Service) *service {
 	return &service{
 		spotifyService: spotifyService,
 	}

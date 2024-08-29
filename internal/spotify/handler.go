@@ -6,13 +6,6 @@ import (
 	"net/http"
 )
 
-type Service interface {
-	GetAlbums(albumIds []string) (AlbumResponse, error)
-	GetTracks(trackIds []string) (TrackResponse, error)
-	GetArtists(artistIds []string) (ArtistResponse, error)
-	Search(query, queryType string) (SearchResponse, error)
-}
-
 type Handler struct {
 	Service
 }

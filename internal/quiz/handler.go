@@ -5,15 +5,11 @@ import (
 	"net/http"
 )
 
-type QuizService interface {
-	GetTodaysQuiz() Quiz
-}
-
 type Handler struct {
-	Service QuizService
+	Service
 }
 
-func NewHandler(s QuizService) *Handler {
+func NewHandler(s Service) *Handler {
 	return &Handler{
 		Service: s,
 	}
