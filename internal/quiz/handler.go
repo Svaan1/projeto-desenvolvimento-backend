@@ -15,6 +15,10 @@ func NewHandler(s Service) *Handler {
 	}
 }
 
+// GetTodaysQuizHandler returns today's quiz.
+//
+// Returns:
+// - A JSON object containing the quiz data.
 func (h *Handler) GetTodaysQuizHandler(w http.ResponseWriter, r *http.Request) {
 	quiz, err := h.Service.GetTodaysQuiz()
 	if err != nil {
