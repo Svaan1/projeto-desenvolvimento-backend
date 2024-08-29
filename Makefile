@@ -11,3 +11,6 @@ dclean:
 	docker rmi server:latest || true
 	docker stop backend-container || true
 	docker rm backend-container || true
+
+docs:
+	godoc -http=:6060
