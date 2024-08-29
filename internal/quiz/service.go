@@ -18,16 +18,11 @@ func NewService(spotifyService spotify.Service) *service {
 	}
 }
 
-func (s *service) GetTodaysQuiz() Quiz {
-	if s.todaysQuiz.CreatedAt.IsZero() || time.Since(s.todaysQuiz.CreatedAt) > 24*time.Hour {
-		s.generateQuiz()
+func (s *service) GetTodaysQuiz() (Quiz, error) {
+	// early return if quiz was already generated today
+	if !s.todaysQuiz.CreatedAt.IsZero() && time.Since(s.todaysQuiz.CreatedAt) < 24*time.Hour {
+		return s.todaysQuiz, nil
 	}
-
-	return s.todaysQuiz
-}
-
-func (s *service) generateQuiz() {
-	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 
 	// since spotify doesn't have a random search,
 	// we can use wildcards to search for an *almost*
@@ -41,6 +36,7 @@ func (s *service) generateQuiz() {
 	// based on region, otherwise we might get some
 	// impossible to guess songs
 
+	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	letters := "abcdefghijklmnopqrstuvwxyz1234567890"
 	var wildcards []string
 
@@ -55,15 +51,57 @@ func (s *service) generateQuiz() {
 
 	randomTracks, err := s.spotifyService.Search(randomWildcard, "track")
 	if err != nil {
-		return
+		log.Printf("Error searching for a random song: %v", err)
+		return Quiz{}, err
 	}
 
-	// eventually should make the quiz more complex and have it's own struct
-	s.todaysQuiz = Quiz{
-		Track:     randomTracks.Tracks.Items[r.IntN(len(randomTracks.Tracks.Items))],
+	randomTrack := randomTracks.Tracks.Items[r.IntN(len(randomTracks.Tracks.Items))]
+	artists, err := s.spotifyService.GetArtists([]string{randomTrack.Album.Artists[0].Id})
+	if err != nil {
+		log.Printf("Error getting artists from random song: %v", err)
+		return Quiz{}, err
+	}
+
+	s.todaysQuiz = buildQuiz(randomTrack, artists.Artists)
+	log.Printf("Generated Quiz with track: %s, from: %v", s.todaysQuiz.Track.Name, s.todaysQuiz.Artists)
+
+	return s.todaysQuiz, nil
+}
+
+func buildQuiz(track spotify.Track, artists []spotify.Artist) Quiz {
+	return Quiz{
+		Artists:   mapArtists(artists),
+		Album:     mapAlbum(track.Album),
+		Track:     mapTrack(track),
 		CreatedAt: time.Now(),
 	}
+}
 
-	log.Printf("Generated Quiz with track: %s, from: %s", s.todaysQuiz.Track.Name, s.todaysQuiz.Track.Album.Artists[0].Name)
+func mapArtists(artists []spotify.Artist) []quizArtist {
+	mappedArtists := make([]quizArtist, len(artists))
+	for i, artist := range artists {
+		mappedArtists[i] = quizArtist{
+			Id:     artist.Id,
+			Name:   artist.Name,
+			Genres: artist.Genres,
+		}
+	}
+	return mappedArtists
+}
 
+func mapAlbum(album spotify.Album) quizAlbum {
+	return quizAlbum{
+		Id:          album.Id,
+		Name:        album.Name,
+		Image:       album.Images[0].URL,
+		ReleaseDate: album.ReleaseDate,
+	}
+}
+
+func mapTrack(track spotify.Track) quizSong {
+	return quizSong{
+		Id:           track.Id,
+		Name:         track.Name,
+		AudioPreview: track.PreviewURL,
+	}
 }
