@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"backendProject/internal/quiz"
 	"backendProject/internal/spotify"
@@ -25,7 +26,7 @@ func NewRouter() *chi.Mux {
 	})
 
 	// Spotify
-	spotifyService := spotify.NewService()
+	spotifyService := spotify.NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	spotifyHandler := spotify.NewHandler(spotifyService)
 
 	r.Get("/albums", spotifyHandler.GetAlbumsHandler)

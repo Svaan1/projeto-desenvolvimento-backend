@@ -30,6 +30,7 @@ func NewService(spotifyService spotify.Service) *service {
 func (s *service) GetTodaysQuiz() (Quiz, error) {
 	// early return if quiz was already generated today
 	if !s.todaysQuiz.CreatedAt.IsZero() && time.Since(s.todaysQuiz.CreatedAt) < 24*time.Hour {
+		log.Printf("Returning already generated quiz created at: %v", s.todaysQuiz.CreatedAt)
 		return s.todaysQuiz, nil
 	}
 

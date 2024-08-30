@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 )
@@ -22,14 +22,18 @@ type token struct {
 	Expiration  time.Time
 }
 type service struct {
-	client *http.Client
-	token  token
+	client              *http.Client
+	token               token
+	spotifyClientID     string
+	spotifyClientSecret string
 }
 
-func NewService() *service {
+func NewService(spotifyClientID, spotifyClientSecret string) *service {
 	return &service{
-		client: &http.Client{},
-		token:  token{},
+		client:              &http.Client{},
+		token:               token{},
+		spotifyClientID:     spotifyClientID,
+		spotifyClientSecret: spotifyClientSecret,
 	}
 }
 
@@ -39,14 +43,11 @@ func NewService() *service {
 // Returns:
 //   - A token object containing the access token and its expiration time.
 //   - An error if the request fails.
-func (spotify *service) getAccessToken() (*token, error) {
+func (s *service) getAccessToken() (*token, error) {
 	// check if token is still valid before getting a new one
-	if spotify.token.AccessToken != "" && time.Now().Before(spotify.token.Expiration) {
-		return &spotify.token, nil
+	if s.token.AccessToken != "" && time.Now().Before(s.token.Expiration) {
+		return &s.token, nil
 	}
-
-	spotifyClientID := os.Getenv("SPOTIFY_CLIENT_ID")
-	spotifyClientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
 
 	data := url.Values{}
 	data.Set("grant_type", "client_credentials")
@@ -56,8 +57,8 @@ func (spotify *service) getAccessToken() (*token, error) {
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(url.QueryEscape(spotifyClientID), url.QueryEscape(spotifyClientSecret))
-	res, err := spotify.client.Do(req)
+	req.SetBasicAuth(url.QueryEscape(s.spotifyClientID), url.QueryEscape(s.spotifyClientSecret))
+	res, err := s.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +70,12 @@ func (spotify *service) getAccessToken() (*token, error) {
 		return nil, err
 	}
 
-	spotify.token = token{
+	s.token = token{
 		AccessToken: spotifyAuthResponse.AccessToken,
 		Expiration:  time.Now().Add(time.Duration(spotifyAuthResponse.ExpiresIn) * time.Second),
 	}
-	return &spotify.token, nil
+	log.Println("New Spotify access token generated")
+	return &s.token, nil
 }
 
 // getItems retrieves items from Spotify's API based on the given URL and IDs.
@@ -110,7 +112,12 @@ func (spotify *service) getItems(url string, ids []string, item interface{}) err
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return errors.New("Spotify HTTP Status: " + res.Status)
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return errors.New("Spotify HTTP Status: " + res.Status)
+		}
+
+		return errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body))
 	}
 
 	err = json.NewDecoder(res.Body).Decode(item)
@@ -222,7 +229,12 @@ func (spotify *service) Search(query, queryType string) (SearchResponse, error) 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return searchResponse, errors.New("Spotify HTTP Status: " + res.Status)
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return searchResponse, errors.New("Spotify HTTP Status: " + res.Status)
+		}
+
+		return searchResponse, errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body))
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&searchResponse)
