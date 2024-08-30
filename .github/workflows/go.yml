@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: "flyctl deploy --remote-only --build-arg SPOTIFY_CLIENT_ID=${{ secrets.SPOTIFY_CLIENT_ID }} --build-arg SPOTIFY_CLIENT_SECRET=${{ secrets.SPOTIFY_CLIENT_SECRET }}"
+      - run: "flyctl deploy --remote-only"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           
