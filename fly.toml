@@ -7,6 +7,7 @@ app = 'backendproject'
 primary_region = 'gru'
 
 [build]
+  dockerfile = "./build/Dockerfile"
   [build.args]
     GO_VERSION = '1.22'
 
