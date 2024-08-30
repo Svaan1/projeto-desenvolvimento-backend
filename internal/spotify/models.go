@@ -14,7 +14,7 @@ type SpotifyAuthResponse struct {
 }
 
 type Album struct {
-	Id          string             `json:"id"`
+	ID          string             `json:"id"`
 	Name        string             `json:"name"`
 	Artists     []SimplifiedArtist `json:"artists"`
 	ReleaseDate string             `json:"release_date"`
@@ -27,7 +27,7 @@ type AlbumResponse struct {
 }
 
 type Track struct {
-	Id         string `json:"id"`
+	ID         string `json:"id"`
 	Album      Album  `json:"album"`
 	Name       string `json:"name"`
 	PreviewURL string `json:"preview_url"`
@@ -37,7 +37,7 @@ type TrackResponse struct {
 }
 
 type Artist struct {
-	Id        string   `json:"id"`
+	ID        string   `json:"id"`
 	Name      string   `json:"name"`
 	Genres    []string `json:"genres"`
 	Followers struct {
@@ -45,7 +45,7 @@ type Artist struct {
 	} `json:"followers"`
 }
 type SimplifiedArtist struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 type ArtistResponse struct {

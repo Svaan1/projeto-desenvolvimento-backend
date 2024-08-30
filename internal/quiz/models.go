@@ -12,20 +12,20 @@ type Quiz struct {
 }
 
 type quizArtist struct {
-	Id     string   `json:"id"`
+	ID     string   `json:"id"`
 	Name   string   `json:"name"`
 	Genres []string `json:"genres"`
 }
 
 type quizAlbum struct {
-	Id          string `json:"id"`
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Image       string `json:"image"`
 	ReleaseDate string `json:"release_date"`
 }
 
 type quizSong struct {
-	Id           string `json:"id"`
+	ID           string `json:"id"`
 	Name         string `json:"name"`
 	AudioPreview string `json:"audio_preview"`
 }

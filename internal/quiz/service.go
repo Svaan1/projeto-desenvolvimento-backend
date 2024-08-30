@@ -64,7 +64,7 @@ func (s *service) GetTodaysQuiz() (Quiz, error) {
 	}
 
 	randomTrack := randomTracks.Tracks.Items[r.IntN(len(randomTracks.Tracks.Items))]
-	artists, err := s.spotifyService.GetArtists([]string{randomTrack.Album.Artists[0].Id})
+	artists, err := s.spotifyService.GetArtists([]string{randomTrack.Album.Artists[0].ID})
 	if err != nil {
 		log.Printf("Error getting artists from random song: %v", err)
 		return Quiz{}, err
@@ -106,7 +106,7 @@ func mapArtists(artists []spotify.Artist) []quizArtist {
 	mappedArtists := make([]quizArtist, len(artists))
 	for i, artist := range artists {
 		mappedArtists[i] = quizArtist{
-			Id:     artist.Id,
+			ID:     artist.ID,
 			Name:   artist.Name,
 			Genres: artist.Genres,
 		}
@@ -123,7 +123,7 @@ func mapArtists(artists []spotify.Artist) []quizArtist {
 //   - A quizAlbum object containing the mapped album data.
 func mapAlbum(album spotify.Album) quizAlbum {
 	return quizAlbum{
-		Id:          album.Id,
+		ID:          album.ID,
 		Name:        album.Name,
 		Image:       album.Images[0].URL,
 		ReleaseDate: album.ReleaseDate,
@@ -139,7 +139,7 @@ func mapAlbum(album spotify.Album) quizAlbum {
 //   - A quizSong object containing the mapped track data.
 func mapTrack(track spotify.Track) quizSong {
 	return quizSong{
-		Id:           track.Id,
+		ID:           track.ID,
 		Name:         track.Name,
 		AudioPreview: track.PreviewURL,
 	}
