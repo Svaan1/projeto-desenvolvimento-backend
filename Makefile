@@ -14,3 +14,6 @@ dclean:
 
 docs:
 	godoc -http=:6060
+
+test:
+	go test -cover ./...
