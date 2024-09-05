@@ -6,6 +6,7 @@ type Service interface {
 	GetArtists(artistIds []string) (ArtistResponse, error)
 	Search(query, queryType string) (SearchResponse, error)
 	RandomSearch(queryType string) (SearchResponse, error)
+	GetRecommendations(seedArtists, seedGenres, seedTracks []string, popularity int) (RecommendationsResponse, error)
 }
 
 type SpotifyAuthResponse struct {
@@ -63,4 +64,8 @@ type SearchResponse struct {
 	Artists struct {
 		Items []Artist `json:"items"`
 	} `json:"artists"`
+}
+
+type RecommendationsResponse struct {
+	Tracks []Track `json:"tracks"`
 }

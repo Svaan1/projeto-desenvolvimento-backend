@@ -43,18 +43,39 @@ func (s *service) GetTodaysQuiz() (Quiz, error) {
 	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	randomTrack := randomTracks.Tracks.Items[r.IntN(len(randomTracks.Tracks.Items))]
 
-	artistIDs := make([]string, len(randomTrack.Album.Artists))
+	artistIDs := make([]string, 5)
 	for i, artist := range randomTrack.Album.Artists {
+		if i == 5 {
+			break
+		}
+
 		artistIDs[i] = artist.ID
 	}
 
-	artists, err := s.spotifyService.GetArtists(artistIDs)
+	recommendedTracks, err := s.spotifyService.GetRecommendations(artistIDs, nil, []string{randomTrack.ID}, 80)
+	if err != nil {
+		log.Printf("Error getting recommendations from random song: %v", err)
+		return Quiz{}, err
+	}
+
+	track := recommendedTracks.Tracks[r.IntN(len(recommendedTracks.Tracks))]
+
+	recommmentedArtistIDs := make([]string, 5)
+	for i, artist := range track.Album.Artists {
+		if i == 5 {
+			break
+		}
+
+		recommmentedArtistIDs[i] = artist.ID
+	}
+
+	artists, err := s.spotifyService.GetArtists(recommmentedArtistIDs)
 	if err != nil {
 		log.Printf("Error getting artists from random song: %v", err)
 		return Quiz{}, err
 	}
 
-	s.todaysQuiz = buildQuiz(randomTrack, artists.Artists)
+	s.todaysQuiz = buildQuiz(track, artists.Artists)
 
 	artistNames := make([]string, len(s.todaysQuiz.Artists))
 	for i, artist := range s.todaysQuiz.Artists {

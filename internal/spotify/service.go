@@ -9,6 +9,7 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -282,4 +283,71 @@ func (s *service) RandomSearch(queryType string) (SearchResponse, error) {
 	randomWildcard := wildcards[r.IntN(len(wildcards))]
 
 	return s.Search(randomWildcard, queryType)
+}
+
+// GetRecommendations retrieves recommendations from Spotify's API based on the given seed parameters.
+//
+// Parameters:
+//   - seedArtists: A slice of artist IDs to use as seed artists. max 5
+//   - seedGenres: A slice of genre names to use as seed genres. max 5
+//   - seedTracks: A slice of track IDs to use as seed tracks. max 5
+//   - popularity: The minimum popularity of the recommendations. (0-100)
+//
+// Returns:
+//   - A RecommendationsResponse object containing the recommendations.
+//   - An error if the request or data parsing fails.
+func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []string, popularity int) (RecommendationsResponse, error) {
+	if len(seedArtists) == 0 && len(seedGenres) == 0 && len(seedTracks) == 0 {
+		return RecommendationsResponse{}, errors.New("at least one seed parameter is required")
+	}
+	if len(seedArtists) > 5 || len(seedGenres) > 5 || len(seedTracks) > 5 {
+		return RecommendationsResponse{}, errors.New("maximum of 5 seed parameters allowed")
+	}
+	if popularity < 0 || popularity > 100 {
+		return RecommendationsResponse{}, errors.New("popularity must be between 0 and 100")
+	}
+
+	url := spotifyBaseURL + "/recommendations"
+	var recommendationsResponse RecommendationsResponse
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return recommendationsResponse, err
+	}
+
+	token, err := s.getAccessToken()
+	if err != nil {
+		return recommendationsResponse, err
+	}
+
+	params := req.URL.Query()
+	params.Set("seed_artists", strings.Join(seedArtists, ","))
+	params.Set("seed_genres", strings.Join(seedGenres, ","))
+	params.Set("seed_tracks", strings.Join(seedTracks, ","))
+	params.Set("min_popularity", strconv.Itoa(popularity))
+	req.URL.RawQuery = params.Encode()
+
+	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
+	req.Header.Add("Content-Type", "application/json")
+	res, err := s.client.Do(req)
+	if err != nil {
+		return recommendationsResponse, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status)
+		}
+
+		return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body))
+	}
+
+	err = json.NewDecoder(res.Body).Decode(&recommendationsResponse)
+	if err != nil {
+		return recommendationsResponse, err
+	}
+
+	return recommendationsResponse, nil
 }

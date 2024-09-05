@@ -15,6 +15,7 @@ func init() {
 
 func TestGetItems(t *testing.T) {
 	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+
 	type args struct {
 		ids      []string
 		itemType string
@@ -67,6 +68,7 @@ func TestGetItems(t *testing.T) {
 
 func TestGetItemsError(t *testing.T) {
 	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+
 	type args struct {
 		ids      []string
 		itemType string
@@ -108,6 +110,7 @@ func TestGetItemsError(t *testing.T) {
 
 func TestSearch(t *testing.T) {
 	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+
 	type args struct {
 		query     string
 		queryType string
@@ -157,6 +160,7 @@ func TestSearch(t *testing.T) {
 
 func TestGetAlbums(t *testing.T) {
 	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+
 	testCases := []struct {
 		given    []string
 		expected string
@@ -180,6 +184,7 @@ func TestGetAlbums(t *testing.T) {
 
 func TestGetTracks(t *testing.T) {
 	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+
 	testCases := []struct {
 		given    []string
 		expected string
@@ -203,6 +208,7 @@ func TestGetTracks(t *testing.T) {
 
 func TestGetArtists(t *testing.T) {
 	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+
 	testCases := []struct {
 		given    []string
 		expected string
@@ -226,6 +232,7 @@ func TestGetArtists(t *testing.T) {
 
 func TestGetItemsWithoutCredentials(t *testing.T) {
 	spotifyService := NewService("", "")
+
 	var albumResponse AlbumResponse
 	err := spotifyService.getItems(spotifyBaseURL+"/albums", []string{"4LH4d3cOWNNsVw41Gqt2kv"}, &albumResponse)
 	if err == nil {
@@ -235,6 +242,7 @@ func TestGetItemsWithoutCredentials(t *testing.T) {
 
 func TestSearchWithoutCredentials(t *testing.T) {
 	spotifyService := NewService("", "")
+
 	_, err := spotifyService.Search("The Dark Side of the Moon", "album")
 	if err == nil {
 		t.Errorf("Expected error searching for album, got nil")
@@ -243,8 +251,18 @@ func TestSearchWithoutCredentials(t *testing.T) {
 
 func TestRandomSearch(t *testing.T) {
 	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+
 	_, err := spotifyService.RandomSearch("track")
 	if err != nil {
 		t.Errorf("Error searching for random track: %v", err)
+	}
+}
+
+func TestGetRecommendations(t *testing.T) {
+	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+
+	_, err := spotifyService.GetRecommendations([]string{"0k17h0D3J5VfsdmQ1iZtE9"}, []string{"rock"}, []string{"6mFkJmJqdDVQ1REhVfGgd1"}, 80)
+	if err != nil {
+		t.Errorf("Error getting recommendations: %v", err)
 	}
 }
