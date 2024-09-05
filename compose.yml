@@ -5,7 +5,16 @@ services:
     build:
       dockerfile: ./build/Dockerfile
     ports:
-      - "8080:8080"
+      - "${SERVER_PORT}:${SERVER_PORT}"
     volumes:
       - .:/app
     restart: unless-stopped
+  
+  docs:
+    container_name: docs
+    build:
+      dockerfile: ./build/Dockerfile.docs
+    ports:
+      - "${DOCS_PORT}:6060"
+    restart:
+      unless-stopped
