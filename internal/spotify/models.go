@@ -5,6 +5,7 @@ type Service interface {
 	GetTracks(trackIds []string) (TrackResponse, error)
 	GetArtists(artistIds []string) (ArtistResponse, error)
 	Search(query, queryType string) (SearchResponse, error)
+	RandomSearch(queryType string) (SearchResponse, error)
 }
 
 type SpotifyAuthResponse struct {

@@ -11,10 +11,10 @@ var spotifyService *service
 
 func init() {
 	godotenv.Load("../../.env")
-	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 }
 
 func TestGetItems(t *testing.T) {
+	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	type args struct {
 		ids      []string
 		itemType string
@@ -66,6 +66,7 @@ func TestGetItems(t *testing.T) {
 }
 
 func TestGetItemsError(t *testing.T) {
+	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	type args struct {
 		ids      []string
 		itemType string
@@ -106,6 +107,7 @@ func TestGetItemsError(t *testing.T) {
 }
 
 func TestSearch(t *testing.T) {
+	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	type args struct {
 		query     string
 		queryType string
@@ -154,6 +156,7 @@ func TestSearch(t *testing.T) {
 }
 
 func TestGetAlbums(t *testing.T) {
+	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	testCases := []struct {
 		given    []string
 		expected string
@@ -176,6 +179,7 @@ func TestGetAlbums(t *testing.T) {
 }
 
 func TestGetTracks(t *testing.T) {
+	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	testCases := []struct {
 		given    []string
 		expected string
@@ -198,6 +202,7 @@ func TestGetTracks(t *testing.T) {
 }
 
 func TestGetArtists(t *testing.T) {
+	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	testCases := []struct {
 		given    []string
 		expected string
@@ -233,5 +238,13 @@ func TestSearchWithoutCredentials(t *testing.T) {
 	_, err := spotifyService.Search("The Dark Side of the Moon", "album")
 	if err == nil {
 		t.Errorf("Expected error searching for album, got nil")
+	}
+}
+
+func TestRandomSearch(t *testing.T) {
+	spotifyService = NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+	_, err := spotifyService.RandomSearch("track")
+	if err != nil {
+		t.Errorf("Error searching for random track: %v", err)
 	}
 }

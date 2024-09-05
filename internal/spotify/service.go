@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"strings"
@@ -243,4 +244,42 @@ func (spotify *service) Search(query, queryType string) (SearchResponse, error) 
 	}
 
 	return searchResponse, nil
+}
+
+// RandomSearch retrieves search results from Spotify's API based on a random query
+//
+// Parameters:
+//   - queryType: The type of search query to perform. (track, album, artist)
+//
+// Returns:
+//   - A SearchResponse object containing the search results.
+//   - An error if the request or data parsing fails.
+func (s *service) RandomSearch(queryType string) (SearchResponse, error) {
+	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+
+	// since spotify doesn't have a random search,
+	// we can use wildcards to search for an *almost*
+	// random result
+
+	// if not random enough, we can add more wildcards
+	// or make the search more complex, since right now
+	// it only gets results from the first page
+
+	// also, it's probably a good idea to narrow results
+	// based on region, otherwise we might get some
+	// impossible to guess songs
+
+	letters := "abcdefghijklmnopqrstuvwxyz1234567890"
+	var wildcards []string
+
+	// %aa, %aa%, aa%, %ab, %ab%, ab% ...
+	for i := 0; i < len(letters); i++ {
+		for j := 0; j < len(letters); j++ {
+			combination := string(letters[i]) + string(letters[j])
+			wildcards = append(wildcards, "%"+combination, "%"+combination+"%", combination+"%")
+		}
+	}
+	randomWildcard := wildcards[r.IntN(len(wildcards))]
+
+	return s.Search(randomWildcard, queryType)
 }

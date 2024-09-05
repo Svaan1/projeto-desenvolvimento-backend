@@ -34,45 +34,33 @@ func (s *service) GetTodaysQuiz() (Quiz, error) {
 		return s.todaysQuiz, nil
 	}
 
-	// since spotify doesn't have a random search,
-	// we can use wildcards to search for an *almost*
-	// random result
-
-	// if not random enough, we can add more wildcards
-	// or make the search more complex, since right now
-	// it only gets results from the first page
-
-	// also, it's probably a good idea to narrow results
-	// based on region, otherwise we might get some
-	// impossible to guess songs
-	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-	letters := "abcdefghijklmnopqrstuvwxyz1234567890"
-	var wildcards []string
-
-	// %aa, %aa%, aa%, %ab, %ab%, ab% ...
-	for i := 0; i < len(letters); i++ {
-		for j := 0; j < len(letters); j++ {
-			combination := string(letters[i]) + string(letters[j])
-			wildcards = append(wildcards, "%"+combination, "%"+combination+"%", combination+"%")
-		}
-	}
-	randomWildcard := wildcards[r.IntN(len(wildcards))]
-
-	randomTracks, err := s.spotifyService.Search(randomWildcard, "track")
+	randomTracks, err := s.spotifyService.RandomSearch("track")
 	if err != nil {
 		log.Printf("Error searching for a random song: %v", err)
 		return Quiz{}, err
 	}
 
+	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	randomTrack := randomTracks.Tracks.Items[r.IntN(len(randomTracks.Tracks.Items))]
-	artists, err := s.spotifyService.GetArtists([]string{randomTrack.Album.Artists[0].ID})
+
+	artistIDs := make([]string, len(randomTrack.Album.Artists))
+	for i, artist := range randomTrack.Album.Artists {
+		artistIDs[i] = artist.ID
+	}
+
+	artists, err := s.spotifyService.GetArtists(artistIDs)
 	if err != nil {
 		log.Printf("Error getting artists from random song: %v", err)
 		return Quiz{}, err
 	}
 
 	s.todaysQuiz = buildQuiz(randomTrack, artists.Artists)
-	log.Printf("Generated Quiz with track: %s, from: %v", s.todaysQuiz.Track.Name, s.todaysQuiz.Artists)
+
+	artistNames := make([]string, len(s.todaysQuiz.Artists))
+	for i, artist := range s.todaysQuiz.Artists {
+		artistNames[i] = artist.Name
+	}
+	log.Printf("Generated Quiz with Track: %s, Album: %s, Artists: %v", s.todaysQuiz.Track.Name, s.todaysQuiz.Album.Name, artistNames)
 
 	return s.todaysQuiz, nil
 }
