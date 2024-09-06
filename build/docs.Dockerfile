@@ -1,4 +1,4 @@
-FROM golang:1.22
+FROM golang:1.23-alpine
 
 RUN go install golang.org/x/tools/cmd/godoc@latest
 

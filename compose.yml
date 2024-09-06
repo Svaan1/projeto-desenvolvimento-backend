@@ -13,7 +13,7 @@ services:
   docs:
     container_name: docs
     build:
-      dockerfile: ./build/Dockerfile.docs
+      dockerfile: ./build/docs.Dockerfile
     ports:
       - "${DOCS_PORT}:6060"
     restart:
