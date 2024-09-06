@@ -52,13 +52,23 @@ func (s *service) GetTodaysQuiz() (Quiz, error) {
 		artistIDs[i] = artist.ID
 	}
 
-	recommendedTracks, err := s.spotifyService.GetRecommendations(artistIDs, nil, []string{randomTrack.ID}, 80)
-	if err != nil {
-		log.Printf("Error getting recommendations from random song: %v", err)
-		return Quiz{}, err
-	}
+	// this prevents the quiz from being generated with a track that doesn't have a preview
+	// right now it may loop indefinitely, making the spotify return 429, and this will basically
+	// break the entire api. This is a temporary solution, and it should be fixed ASAP!!.
+	var track spotify.Track
+	for track.PreviewURL == "" {
+		recommendedTracks, err := s.spotifyService.GetRecommendations(artistIDs, nil, []string{randomTrack.ID}, 80)
+		if err != nil {
+			log.Printf("Error getting recommendations from random song: %v", err)
+			return Quiz{}, err
+		}
 
-	track := recommendedTracks.Tracks[r.IntN(len(recommendedTracks.Tracks))]
+		if len(recommendedTracks.Tracks) == 0 {
+			continue
+		}
+
+		track = recommendedTracks.Tracks[r.IntN(len(recommendedTracks.Tracks))]
+	}
 
 	recommmentedArtistIDs := make([]string, 5)
 	for i, artist := range track.Album.Artists {
