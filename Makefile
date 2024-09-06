@@ -16,4 +16,4 @@ docs:
 	godoc -http=:6060
 
 test:
-	go test -cover ./...
+	gotestsum --format testdox
