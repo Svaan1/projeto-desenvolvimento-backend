@@ -56,7 +56,7 @@ func (s *service) GetTodaysQuiz() (Quiz, error) {
 	// right now it may loop indefinitely, making the spotify return 429, and this will basically
 	// break the entire api. This is a temporary solution, and it should be fixed ASAP!!.
 	var track spotify.Track
-	for track.PreviewURL == "" {
+	for i := 0; i < 10; i++ {
 		recommendedTracks, err := s.spotifyService.GetRecommendations(artistIDs, nil, []string{randomTrack.ID}, 80)
 		if err != nil {
 			log.Printf("Error getting recommendations from random song: %v", err)
@@ -67,7 +67,14 @@ func (s *service) GetTodaysQuiz() (Quiz, error) {
 			continue
 		}
 
-		track = recommendedTracks.Tracks[r.IntN(len(recommendedTracks.Tracks))]
+		for j := 0; j < 10; j++ {
+			track = recommendedTracks.Tracks[r.IntN(len(recommendedTracks.Tracks))]
+			if track.PreviewURL != "" {
+				break
+			}
+		}
+		// TODO: get the property Retry-After from the response header and wait that amount of time
+		time.Sleep(1 * time.Second)
 	}
 
 	recommmentedArtistIDs := make([]string, 5)
