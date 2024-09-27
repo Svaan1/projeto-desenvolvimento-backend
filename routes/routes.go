@@ -36,7 +36,8 @@ func NewRouter(db db.Database) *chi.Mux {
 	r.Get("/search", spotifyHandler.SearchHandler)
 
 	// Quiz
-	quizService := quiz.NewService(spotifyService)
+	quizRepository := quiz.NewRepository(db)
+	quizService := quiz.NewService(quizRepository, spotifyService)
 	quizHandler := quiz.NewHandler(quizService)
 
 	r.Get(baseURL+"/quiz", quizHandler.GetTodaysQuizHandler)

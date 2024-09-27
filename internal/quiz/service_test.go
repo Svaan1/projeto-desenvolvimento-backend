@@ -13,6 +13,7 @@ var quizService *service
 
 func init() {
 	godotenv.Load("../../.env")
+
 	spotifyService := spotify.NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	quizService = NewService(spotifyService)
 }

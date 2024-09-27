@@ -1,6 +1,7 @@
 package quiz
 
 import (
+	"context"
 	"time"
 )
 
@@ -30,5 +31,5 @@ type quizSong struct {
 	AudioPreview string `json:"audio_preview"`
 }
 type Service interface {
-	GetTodaysQuiz() (Quiz, error)
+	GetTodaysQuiz(context.Context) (Quiz, error)
 }

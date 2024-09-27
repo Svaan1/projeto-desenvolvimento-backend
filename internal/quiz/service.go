@@ -4,19 +4,21 @@ package quiz
 
 import (
 	"backendProject/internal/spotify"
+	"context"
 	"log"
 	"math/rand/v2"
 	"time"
 )
 
 type service struct {
-	todaysQuiz     Quiz
+	repository     *Repository
 	spotifyService spotify.Service
 }
 
-func NewService(spotifyService spotify.Service) *service {
+func NewService(repository *Repository, spotifyService spotify.Service) *service {
 	return &service{
 		spotifyService: spotifyService,
+		repository:     repository,
 	}
 }
 
@@ -27,11 +29,17 @@ func NewService(spotifyService spotify.Service) *service {
 // Returns:
 //   - A Quiz object containing the generated quiz data.
 //   - An error if the quiz generation fails.
-func (s *service) GetTodaysQuiz() (Quiz, error) {
+func (s *service) GetTodaysQuiz(ctx context.Context) (Quiz, error) {
 	// early return if quiz was already generated today
-	if !s.todaysQuiz.CreatedAt.IsZero() && time.Since(s.todaysQuiz.CreatedAt) < 24*time.Hour {
-		log.Printf("Returning already generated quiz created at: %v", s.todaysQuiz.CreatedAt)
-		return s.todaysQuiz, nil
+	todaysQuiz, err := s.repository.GetQuiz(ctx, "quiz")
+	if err != nil {
+		log.Printf("Error getting today's quiz: %v", err)
+		return Quiz{}, err
+	}
+
+	if !todaysQuiz.CreatedAt.IsZero() && time.Since(todaysQuiz.CreatedAt) < 24*time.Hour {
+		log.Printf("Returning already generated quiz created at: %v", todaysQuiz.CreatedAt)
+		return todaysQuiz, nil
 	}
 
 	randomTracks, err := s.spotifyService.RandomSearch("track")
@@ -92,15 +100,20 @@ func (s *service) GetTodaysQuiz() (Quiz, error) {
 		return Quiz{}, err
 	}
 
-	s.todaysQuiz = buildQuiz(track, artists.Artists)
+	todaysQuiz = buildQuiz(track, artists.Artists)
+	err = s.repository.SetQuiz(ctx, "quiz", todaysQuiz)
+	if err != nil {
+		log.Printf("Error setting today's quiz: %v", err)
+		return Quiz{}, err
+	}
 
-	artistNames := make([]string, len(s.todaysQuiz.Artists))
-	for i, artist := range s.todaysQuiz.Artists {
+	artistNames := make([]string, len(todaysQuiz.Artists))
+	for i, artist := range todaysQuiz.Artists {
 		artistNames[i] = artist.Name
 	}
-	log.Printf("Generated Quiz with Track: %s, Album: %s, Artists: %v", s.todaysQuiz.Track.Name, s.todaysQuiz.Album.Name, artistNames)
+	log.Printf("Generated Quiz with Track: %s, Album: %s, Artists: %v", todaysQuiz.Track.Name, todaysQuiz.Album.Name, artistNames)
 
-	return s.todaysQuiz, nil
+	return todaysQuiz, nil
 }
 
 // buildQuiz creates a Quiz object from a given Spotify track and a list
