@@ -21,3 +21,7 @@ go.work.sum
 
 # Temp logs
 /tmp
+
+# Redis
+redis-data/
+redis.conf

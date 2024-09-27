@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"backendProject/internal/db"
 	"backendProject/internal/quiz"
 	"backendProject/internal/spotify"
 
@@ -16,7 +17,7 @@ const (
 	baseURL = "/api/v1"
 )
 
-func NewRouter() *chi.Mux {
+func NewRouter(db db.Database) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
