@@ -1,4 +1,4 @@
-FROM golang:1.22 AS builder
+FROM golang:1.23-alpine AS builder
 WORKDIR /app
 
 COPY go.mod go.sum ./
@@ -7,7 +7,7 @@ COPY . .
 
 RUN go build -o main cmd/server/main.go
 
-FROM golang:1.22 AS runner
+FROM golang:1.23-alpine AS runner
 
 # install Air
 RUN go install github.com/air-verse/air@latest
@@ -18,5 +18,4 @@ WORKDIR /app
 COPY --from=builder /app/main /app/tmp/main
 COPY . .
 
-EXPOSE 8080
 CMD ["air", "-c", "configs/.docker-air.toml"]

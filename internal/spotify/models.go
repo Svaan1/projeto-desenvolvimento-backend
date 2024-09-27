@@ -5,6 +5,8 @@ type Service interface {
 	GetTracks(trackIds []string) (TrackResponse, error)
 	GetArtists(artistIds []string) (ArtistResponse, error)
 	Search(query, queryType string) (SearchResponse, error)
+	RandomSearch(queryType string) (SearchResponse, error)
+	GetRecommendations(seedArtists, seedGenres, seedTracks []string, popularity int) (RecommendationsResponse, error)
 }
 
 type SpotifyAuthResponse struct {
@@ -14,7 +16,7 @@ type SpotifyAuthResponse struct {
 }
 
 type Album struct {
-	Id          string             `json:"id"`
+	ID          string             `json:"id"`
 	Name        string             `json:"name"`
 	Artists     []SimplifiedArtist `json:"artists"`
 	ReleaseDate string             `json:"release_date"`
@@ -27,7 +29,7 @@ type AlbumResponse struct {
 }
 
 type Track struct {
-	Id         string `json:"id"`
+	ID         string `json:"id"`
 	Album      Album  `json:"album"`
 	Name       string `json:"name"`
 	PreviewURL string `json:"preview_url"`
@@ -37,7 +39,7 @@ type TrackResponse struct {
 }
 
 type Artist struct {
-	Id        string   `json:"id"`
+	ID        string   `json:"id"`
 	Name      string   `json:"name"`
 	Genres    []string `json:"genres"`
 	Followers struct {
@@ -45,7 +47,7 @@ type Artist struct {
 	} `json:"followers"`
 }
 type SimplifiedArtist struct {
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 type ArtistResponse struct {
@@ -62,4 +64,8 @@ type SearchResponse struct {
 	Artists struct {
 		Items []Artist `json:"items"`
 	} `json:"artists"`
+}
+
+type RecommendationsResponse struct {
+	Tracks []Track `json:"tracks"`
 }

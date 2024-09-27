@@ -3,7 +3,9 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"os"
 
+	"backendProject/internal/db"
 	"backendProject/internal/quiz"
 	"backendProject/internal/spotify"
 
@@ -15,7 +17,7 @@ const (
 	baseURL = "/api/v1"
 )
 
-func NewRouter() *chi.Mux {
+func NewRouter(db db.Database) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -25,7 +27,7 @@ func NewRouter() *chi.Mux {
 	})
 
 	// Spotify
-	spotifyService := spotify.NewService()
+	spotifyService := spotify.NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 	spotifyHandler := spotify.NewHandler(spotifyService)
 
 	r.Get("/albums", spotifyHandler.GetAlbumsHandler)
@@ -34,7 +36,8 @@ func NewRouter() *chi.Mux {
 	r.Get("/search", spotifyHandler.SearchHandler)
 
 	// Quiz
-	quizService := quiz.NewService(spotifyService)
+	quizRepository := quiz.NewRepository(db)
+	quizService := quiz.NewService(quizRepository, spotifyService)
 	quizHandler := quiz.NewHandler(quizService)
 
 	r.Get(baseURL+"/quiz", quizHandler.GetTodaysQuizHandler)

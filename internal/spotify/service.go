@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
-	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,14 +24,18 @@ type token struct {
 	Expiration  time.Time
 }
 type service struct {
-	client *http.Client
-	token  token
+	client              *http.Client
+	token               token
+	spotifyClientID     string
+	spotifyClientSecret string
 }
 
-func NewService() *service {
+func NewService(spotifyClientID, spotifyClientSecret string) *service {
 	return &service{
-		client: &http.Client{},
-		token:  token{},
+		client:              &http.Client{},
+		token:               token{},
+		spotifyClientID:     spotifyClientID,
+		spotifyClientSecret: spotifyClientSecret,
 	}
 }
 
@@ -39,14 +45,11 @@ func NewService() *service {
 // Returns:
 //   - A token object containing the access token and its expiration time.
 //   - An error if the request fails.
-func (spotify *service) getAccessToken() (*token, error) {
+func (s *service) getAccessToken() (*token, error) {
 	// check if token is still valid before getting a new one
-	if spotify.token.AccessToken != "" && time.Now().Before(spotify.token.Expiration) {
-		return &spotify.token, nil
+	if s.token.AccessToken != "" && time.Now().Before(s.token.Expiration) {
+		return &s.token, nil
 	}
-
-	spotifyClientID := os.Getenv("SPOTIFY_CLIENT_ID")
-	spotifyClientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
 
 	data := url.Values{}
 	data.Set("grant_type", "client_credentials")
@@ -56,8 +59,8 @@ func (spotify *service) getAccessToken() (*token, error) {
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(url.QueryEscape(spotifyClientID), url.QueryEscape(spotifyClientSecret))
-	res, err := spotify.client.Do(req)
+	req.SetBasicAuth(url.QueryEscape(s.spotifyClientID), url.QueryEscape(s.spotifyClientSecret))
+	res, err := s.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +72,12 @@ func (spotify *service) getAccessToken() (*token, error) {
 		return nil, err
 	}
 
-	spotify.token = token{
+	s.token = token{
 		AccessToken: spotifyAuthResponse.AccessToken,
 		Expiration:  time.Now().Add(time.Duration(spotifyAuthResponse.ExpiresIn) * time.Second),
 	}
-	return &spotify.token, nil
+	log.Println("New Spotify access token generated")
+	return &s.token, nil
 }
 
 // getItems retrieves items from Spotify's API based on the given URL and IDs.
@@ -110,7 +114,12 @@ func (spotify *service) getItems(url string, ids []string, item interface{}) err
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return errors.New("Spotify HTTP Status: " + res.Status)
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return errors.New("Spotify HTTP Status: " + res.Status)
+		}
+
+		return errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body))
 	}
 
 	err = json.NewDecoder(res.Body).Decode(item)
@@ -222,7 +231,12 @@ func (spotify *service) Search(query, queryType string) (SearchResponse, error) 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return searchResponse, errors.New("Spotify HTTP Status: " + res.Status)
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return searchResponse, errors.New("Spotify HTTP Status: " + res.Status)
+		}
+
+		return searchResponse, errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body))
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&searchResponse)
@@ -231,4 +245,109 @@ func (spotify *service) Search(query, queryType string) (SearchResponse, error) 
 	}
 
 	return searchResponse, nil
+}
+
+// RandomSearch retrieves search results from Spotify's API based on a random query
+//
+// Parameters:
+//   - queryType: The type of search query to perform. (track, album, artist)
+//
+// Returns:
+//   - A SearchResponse object containing the search results.
+//   - An error if the request or data parsing fails.
+func (s *service) RandomSearch(queryType string) (SearchResponse, error) {
+	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+
+	// since spotify doesn't have a random search,
+	// we can use wildcards to search for an *almost*
+	// random result
+
+	// if not random enough, we can add more wildcards
+	// or make the search more complex, since right now
+	// it only gets results from the first page
+
+	// also, it's probably a good idea to narrow results
+	// based on region, otherwise we might get some
+	// impossible to guess songs
+
+	letters := "abcdefghijklmnopqrstuvwxyz1234567890"
+	var wildcards []string
+
+	// %aa, %aa%, aa%, %ab, %ab%, ab% ...
+	for i := 0; i < len(letters); i++ {
+		for j := 0; j < len(letters); j++ {
+			combination := string(letters[i]) + string(letters[j])
+			wildcards = append(wildcards, "%"+combination, "%"+combination+"%", combination+"%")
+		}
+	}
+	randomWildcard := wildcards[r.IntN(len(wildcards))]
+
+	return s.Search(randomWildcard, queryType)
+}
+
+// GetRecommendations retrieves recommendations from Spotify's API based on the given seed parameters.
+//
+// Parameters:
+//   - seedArtists: A slice of artist IDs to use as seed artists. max 5
+//   - seedGenres: A slice of genre names to use as seed genres. max 5
+//   - seedTracks: A slice of track IDs to use as seed tracks. max 5
+//   - popularity: The minimum popularity of the recommendations. (0-100)
+//
+// Returns:
+//   - A RecommendationsResponse object containing the recommendations.
+//   - An error if the request or data parsing fails.
+func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []string, popularity int) (RecommendationsResponse, error) {
+	if len(seedArtists) == 0 && len(seedGenres) == 0 && len(seedTracks) == 0 {
+		return RecommendationsResponse{}, errors.New("at least one seed parameter is required")
+	}
+	if len(seedArtists) > 5 || len(seedGenres) > 5 || len(seedTracks) > 5 {
+		return RecommendationsResponse{}, errors.New("maximum of 5 seed parameters allowed")
+	}
+	if popularity < 0 || popularity > 100 {
+		return RecommendationsResponse{}, errors.New("popularity must be between 0 and 100")
+	}
+
+	url := spotifyBaseURL + "/recommendations"
+	var recommendationsResponse RecommendationsResponse
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return recommendationsResponse, err
+	}
+
+	token, err := s.getAccessToken()
+	if err != nil {
+		return recommendationsResponse, err
+	}
+
+	params := req.URL.Query()
+	params.Set("seed_artists", strings.Join(seedArtists, ","))
+	params.Set("seed_genres", strings.Join(seedGenres, ","))
+	params.Set("seed_tracks", strings.Join(seedTracks, ","))
+	params.Set("min_popularity", strconv.Itoa(popularity))
+	req.URL.RawQuery = params.Encode()
+
+	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
+	req.Header.Add("Content-Type", "application/json")
+	res, err := s.client.Do(req)
+	if err != nil {
+		return recommendationsResponse, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status)
+		}
+
+		return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body))
+	}
+
+	err = json.NewDecoder(res.Body).Decode(&recommendationsResponse)
+	if err != nil {
+		return recommendationsResponse, err
+	}
+
+	return recommendationsResponse, nil
 }

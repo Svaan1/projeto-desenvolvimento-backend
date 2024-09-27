@@ -20,7 +20,7 @@ func NewHandler(s Service) *Handler {
 // Returns:
 //   - A JSON object containing the quiz data.
 func (h *Handler) GetTodaysQuizHandler(w http.ResponseWriter, r *http.Request) {
-	quiz, err := h.Service.GetTodaysQuiz()
+	quiz, err := h.Service.GetTodaysQuiz(r.Context())
 	if err != nil {
 		http.Error(w, "Error getting today's quiz", http.StatusInternalServerError)
 		return
