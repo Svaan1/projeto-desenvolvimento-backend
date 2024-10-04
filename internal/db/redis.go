@@ -24,14 +24,20 @@ func (r *RedisDB) NewDatabase(ctx context.Context) (Database, error) {
 }
 
 func NewRedisDB(ctx context.Context) (*RedisDB, error) {
-	redisPort := os.Getenv("REDIS_PORT")
+	redisUser := os.Getenv("REDIS_USER")
 	redisPassword := os.Getenv("REDIS_PASSWORD")
-	log.Printf("Connecting to Redis at: redis:%s", redisPort)
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+	log.Printf("Connecting to Redis at: %s:%s", redisHost, redisPort)
 
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("redis:%s", redisPort),
-		Password: redisPassword,
-	})
+	opt, err := redis.ParseURL(
+		fmt.Sprintf("redis://%s:%s@%s:%s", redisUser, redisPassword, redisHost, redisPort),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	client := redis.NewClient(opt)
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		return nil, err
 	}
