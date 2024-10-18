@@ -8,6 +8,7 @@ import (
 	"backendProject/internal/db"
 	"backendProject/internal/quiz"
 	"backendProject/internal/spotify"
+	"backendProject/internal/websocket"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -41,6 +42,10 @@ func NewRouter(db db.Database) *chi.Mux {
 	quizHandler := quiz.NewHandler(quizService)
 
 	r.Get(baseURL+"/quiz", quizHandler.GetTodaysQuizHandler)
+
+	// Websocket
+	websocketHandler := websocket.NewHandler()
+	r.Get("/ws", websocketHandler.Handle)
 
 	return r
 }
