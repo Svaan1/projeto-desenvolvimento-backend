@@ -45,7 +45,11 @@ func NewRouter(db db.Database) *chi.Mux {
 
 	// Websocket
 	websocketHandler := websocket.NewHandler()
-	r.Get("/ws", websocketHandler.Handle)
+
+	r.Get(baseURL+"/ws/{room}", websocketHandler.HandleWS)
+
+	r.Get(baseURL+"/rooms", websocketHandler.ListRoomCodes)
+	r.Post(baseURL+"/rooms", websocketHandler.CreateRoom)
 
 	return r
 }

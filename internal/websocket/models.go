@@ -17,6 +17,7 @@ type Room struct {
 	connections map[*Connection]bool
 	broadcast   chan []byte
 	mu          sync.Mutex
+	password    []byte
 }
 
 // Connection represents a websocket connection to a room.
@@ -24,4 +25,9 @@ type Connection struct {
 	ws    *websocket.Conn
 	room  *Room
 	admin bool
+}
+
+type CreateRoomRequest struct {
+	RoomID   string `json:"room"`
+	Password string `json:"password"`
 }
