@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,16 +10,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var (
-	ErrNil = errors.New("no matching record found in redis database")
-)
-
 type RedisDB struct {
 	Client *redis.Client
-}
-
-func (r *RedisDB) NewDatabase(ctx context.Context) (Database, error) {
-	return NewRedisDB(ctx)
 }
 
 func NewRedisDB(ctx context.Context) (*RedisDB, error) {
