@@ -15,5 +15,6 @@ dclean:
 docs:
 	godoc -http=:6060
 
+# Needs gotestsum [ go install gotest.tools/gotestsum@latest ]
 test:
 	gotestsum --format testdox

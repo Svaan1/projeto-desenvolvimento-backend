@@ -1,7 +1,10 @@
 package quiz
 
 import (
+	"backendProject/internal/db"
 	"backendProject/internal/spotify"
+	"context"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -9,18 +12,24 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var quizService *service
-
 func init() {
 	godotenv.Load("../../.env")
-
-	spotifyService := spotify.NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
-	quizService = NewService(spotifyService)
 }
 
 func TestGetTodaysQuiz(t *testing.T) {
+	// Setup the quiz service
+	ctx := context.Background()
+	db, err := db.NewSQLiteDB(ctx, ":memory:")
+	if err != nil {
+		log.Fatalf("error connecting to in memory db: %v", err)
+	}
+	defer db.Close()
+	repo := NewRepository(db)
+	spotifyService := spotify.NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+	quizService := NewService(repo, spotifyService)
+
 	// Get today's quiz
-	quiz, err := quizService.GetTodaysQuiz()
+	quiz, err := quizService.GetTodaysQuiz(ctx)
 	if err != nil {
 		t.Errorf("Error getting today's quiz")
 	}
@@ -44,23 +53,69 @@ func TestGetTodaysQuiz(t *testing.T) {
 }
 
 func TestGetTodaysQuizTwice(t *testing.T) {
-	// Get today's quiz
-	quiz, err := quizService.GetTodaysQuiz()
+	// Setup the quiz service
+	ctx := context.Background()
+	db, err := db.NewSQLiteDB(ctx, ":memory:")
 	if err != nil {
-		t.Errorf("Error getting today's quiz")
+		log.Fatalf("error connecting to in memory db: %v", err)
+	}
+	defer db.Close()
+	repo := NewRepository(db)
+	spotifyService := spotify.NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+	quizService := NewService(repo, spotifyService)
+
+	// Get today's quiz
+	quiz, err := quizService.GetTodaysQuiz(ctx)
+	if err != nil {
+		log.Fatalf("error getting today's quiz")
 	}
 
 	// Get today's quiz again
-	quiz2, err := quizService.GetTodaysQuiz()
+	quiz2, err := quizService.GetTodaysQuiz(ctx)
 	if err != nil {
-		t.Errorf("Error getting today's quiz")
+		log.Fatalf("error getting today's quiz")
 	}
 
 	// Check if both quizzes are the same
 	if quiz.Track.ID != quiz2.Track.ID {
 		t.Errorf("Expected both quizzes to have the same track ID, got different IDs")
 	}
-	if quiz.CreatedAt != quiz2.CreatedAt {
+
+	if quiz.CreatedAt.Compare(quiz2.CreatedAt) != 0 {
 		t.Errorf("Expected both quizzes to have the same creation time, got different times")
+		log.Printf("quiz 1: %v, quiz 2: %v", quiz.CreatedAt, quiz2.CreatedAt)
+	}
+}
+
+func TestGetRandomTrack(t *testing.T) {
+	// Setup the quiz service
+	ctx := context.Background()
+	db, err := db.NewSQLiteDB(ctx, ":memory:")
+	if err != nil {
+		log.Fatalf("error connecting to in memory db: %v", err)
+	}
+	defer db.Close()
+	repo := NewRepository(db)
+	spotifyService := spotify.NewService(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
+	quizService := NewService(repo, spotifyService)
+
+	// Get a random track based on Wish You Were Here by pink floyd
+	track, err := quizService.getRandomTrack([]string{"0k17h0D3J5VfsdmQ1iZtE9"}, "6mFkJmJqdDVQ1REhVfGgd1")
+	if err != nil {
+		t.Errorf("Error getting random track: %v", err)
+	}
+
+	// Check if the track has the correct fields
+	if track.Name == "" {
+		t.Errorf("Expected track to have a name, got empty string")
+	}
+	if track.ID == "" {
+		t.Errorf("Expected track to have an ID, got empty string")
+	}
+	if len(track.Album.Artists) == 0 {
+		t.Errorf("Expected track to have artists, got 0")
+	}
+	if track.PreviewURL == "" {
+		t.Errorf("Expected track to have a preview URL, got empty string")
 	}
 }
