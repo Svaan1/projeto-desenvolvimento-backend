@@ -60,29 +60,10 @@ func (s *service) GetTodaysQuiz(ctx context.Context) (Quiz, error) {
 		artistIDs[i] = artist.ID
 	}
 
-	// this prevents the quiz from being generated with a track that doesn't have a preview
-	// right now it may loop indefinitely, making the spotify return 429, and this will basically
-	// break the entire api. This is a temporary solution, and it should be fixed ASAP!!.
-	var track spotify.Track
-	for i := 0; i < 10; i++ {
-		recommendedTracks, err := s.spotifyService.GetRecommendations(artistIDs, nil, []string{randomTrack.ID}, 80)
-		if err != nil {
-			log.Printf("Error getting recommendations from random song: %v", err)
-			return Quiz{}, err
-		}
-
-		if len(recommendedTracks.Tracks) == 0 {
-			continue
-		}
-
-		for j := 0; j < 10; j++ {
-			track = recommendedTracks.Tracks[r.IntN(len(recommendedTracks.Tracks))]
-			if track.PreviewURL != "" {
-				break
-			}
-		}
-		// TODO: get the property Retry-After from the response header and wait that amount of time
-		time.Sleep(1 * time.Second)
+	track, err := s.getRandomTrack(artistIDs, randomTrack.ID)
+	if err != nil {
+		log.Printf("Error getting random track from recommendations: %v", err)
+		return Quiz{}, err
 	}
 
 	recommmentedArtistIDs := make([]string, 5)
@@ -114,6 +95,40 @@ func (s *service) GetTodaysQuiz(ctx context.Context) (Quiz, error) {
 	log.Printf("Generated Quiz with Track: %s, Album: %s, Artists: %v", todaysQuiz.Track.Name, todaysQuiz.Album.Name, artistNames)
 
 	return todaysQuiz, nil
+}
+
+// getRandomTrack retrieves a random recommended track from Spotify's API based on a list of artist IDs and a random track ID.
+//
+// Parameters:
+//   - artistIDs: A slice of artist IDs to use as seed artists.
+//   - randomTrackID: A random track ID to use as a seed track.
+//
+// Returns:
+//   - A Spotify track object containing the random recommended track data.
+//   - An error if the request fails.
+func (s *service) getRandomTrack(artistIDs []string, randomTrackID string) (spotify.Track, error) {
+	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+	for {
+		recommendedTracks, err := s.spotifyService.GetRecommendations(artistIDs, nil, []string{randomTrackID}, 80)
+		if err != nil {
+			log.Printf("Error getting recommendations from random song: %v", err)
+			return spotify.Track{}, err
+		}
+
+		if len(recommendedTracks.Tracks) == 0 {
+			continue
+		}
+
+		for j := 0; j < 10; j++ {
+			recommendedTrack := recommendedTracks.Tracks[r.IntN(len(recommendedTracks.Tracks))]
+
+			// return the first track found with a preview URL
+			if recommendedTrack.PreviewURL != "" {
+				return recommendedTrack, nil
+			}
+		}
+
+	}
 }
 
 // buildQuiz creates a Quiz object from a given Spotify track and a list
