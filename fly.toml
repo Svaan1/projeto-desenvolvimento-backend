@@ -7,9 +7,9 @@ app = 'backendproject'
 primary_region = 'gru'
 
 [build]
-  dockerfile = "./build/Dockerfile"
+  dockerfile = "./build/release.Dockerfile"
   [build.args]
-    GO_VERSION = '1.22'
+    GO_VERSION = '1.23'
 
 [env]
   SERVER_PORT = '8080'
