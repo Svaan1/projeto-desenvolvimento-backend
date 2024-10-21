@@ -116,10 +116,10 @@ func (spotify *service) getItems(url string, ids []string, item interface{}) err
 	if res.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			return errors.New("Spotify HTTP Status: " + res.Status)
+			return errors.New("Spotify HTTP Status " + res.Status)
 		}
 
-		return errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body))
+		return errors.New("\n" + string(body))
 	}
 
 	err = json.NewDecoder(res.Body).Decode(item)
@@ -325,6 +325,7 @@ func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []strin
 	params.Set("seed_genres", strings.Join(seedGenres, ","))
 	params.Set("seed_tracks", strings.Join(seedTracks, ","))
 	params.Set("min_popularity", strconv.Itoa(popularity))
+	params.Set("market", "US")
 	req.URL.RawQuery = params.Encode()
 
 	req.Header.Add("Authorization", "Bearer "+token.AccessToken)
@@ -335,7 +336,18 @@ func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []strin
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode == http.StatusTooManyRequests {
+		retryAfter := res.Header.Get("Retry-After")
+
+		waitTime, err := strconv.Atoi(retryAfter)
+		if err != nil {
+			return recommendationsResponse, err
+		}
+
+		log.Println("Rate limited by Spotify, waiting ", waitTime, "seconds")
+		time.Sleep(time.Second * time.Duration(waitTime))
+		return s.GetRecommendations(seedArtists, seedGenres, seedTracks, popularity)
+	} else if res.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status)
@@ -349,5 +361,6 @@ func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []strin
 		return recommendationsResponse, err
 	}
 
+	log.Println("Got new recommendations")
 	return recommendationsResponse, nil
 }
