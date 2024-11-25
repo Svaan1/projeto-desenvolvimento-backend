@@ -321,9 +321,15 @@ func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []strin
 	}
 
 	params := req.URL.Query()
-	params.Set("seed_artists", strings.Join(seedArtists, ","))
-	params.Set("seed_genres", strings.Join(seedGenres, ","))
-	params.Set("seed_tracks", strings.Join(seedTracks, ","))
+	if len(seedArtists) > 0 {
+		params.Set("seed_artists", strings.Join(seedArtists, ","))
+	}
+	if len(seedGenres) > 0 {
+		params.Set("seed_genres", strings.Join(seedGenres, ","))
+	}
+	if len(seedTracks) > 0 {
+		params.Set("seed_tracks", strings.Join(seedTracks, ","))
+	}
 	params.Set("min_popularity", strconv.Itoa(popularity))
 	params.Set("market", "US")
 	req.URL.RawQuery = params.Encode()
@@ -350,10 +356,10 @@ func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []strin
 	} else if res.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status)
+			return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status + "\nRequest: " + req.URL.String())
 		}
 
-		return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body))
+		return recommendationsResponse, errors.New("Spotify HTTP Status: " + res.Status + "\n" + string(body) + "\nRequest: " + req.URL.String())
 	}
 
 	err = json.NewDecoder(res.Body).Decode(&recommendationsResponse)
@@ -361,6 +367,8 @@ func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []strin
 		return recommendationsResponse, err
 	}
 
-	log.Println("Got new recommendations")
+	if len(recommendationsResponse.Tracks) != 0 {
+		log.Println("Got new recommendations:\n" + recommendationsResponse.String())
+	}
 	return recommendationsResponse, nil
 }
