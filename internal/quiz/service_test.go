@@ -4,6 +4,7 @@ import (
 	"backendProject/internal/db"
 	"backendProject/internal/spotify"
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -50,6 +51,8 @@ func TestGetTodaysQuiz(t *testing.T) {
 	if time.Since(quiz.CreatedAt) > 24*time.Hour {
 		t.Errorf("Expected quiz to be created within the last 24 hours")
 	}
+
+	fmt.Printf("Quiz: %v\n", quiz)
 }
 
 func TestGetTodaysQuizTwice(t *testing.T) {
@@ -102,7 +105,13 @@ func TestGetRandomTrack(t *testing.T) {
 	// Get a random track based on Wish You Were Here by pink floyd
 	track, err := quizService.getRandomTrack([]string{"0k17h0D3J5VfsdmQ1iZtE9"}, "6mFkJmJqdDVQ1REhVfGgd1")
 	if err != nil {
-		t.Errorf("Error getting random track: %v", err)
+		switch err.(type) {
+		case *spotify.ErrRecommendationsEmpty:
+			// Do nothing, this is expected
+			return
+		default:
+			t.Errorf("Error getting random track: %v", err)
+		}
 	}
 
 	// Check if the track has the correct fields

@@ -5,6 +5,7 @@ package quiz
 import (
 	"backendProject/internal/spotify"
 	"context"
+	"fmt"
 	"log"
 	"math/rand/v2"
 	"time"
@@ -62,8 +63,13 @@ func (s *service) GetTodaysQuiz(ctx context.Context) (Quiz, error) {
 
 	track, err := s.getRandomTrack(artistIDs, randomTrack.ID)
 	if err != nil {
-		log.Printf("Error getting random track from recommendations: %v", err)
-		return Quiz{}, err
+		switch err.(type) {
+		case *spotify.ErrRecommendationsEmpty:
+			log.Printf("No recommendations found with the current seed, retrying")
+			return s.GetTodaysQuiz(ctx) // retry if no recommendations are found with the current seed
+		default:
+			return Quiz{}, err
+		}
 	}
 
 	recommmentedArtistIDs := make([]string, 5)
@@ -108,27 +114,38 @@ func (s *service) GetTodaysQuiz(ctx context.Context) (Quiz, error) {
 //   - An error if the request fails.
 func (s *service) getRandomTrack(artistIDs []string, randomTrackID string) (spotify.Track, error) {
 	r := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-	for {
-		recommendedTracks, err := s.spotifyService.GetRecommendations(artistIDs, nil, []string{randomTrackID}, 80)
+	attempts := 0
+	maxAttempts := 10
+	for attempts < maxAttempts {
+		// limit the number of seeds to 5. 4 artists and the random track
+		seedArtists := artistIDs
+		if len(seedArtists) > 4 {
+			seedArtists = seedArtists[:4]
+		}
+
+		recommendedTracks, err := s.spotifyService.GetRecommendations(seedArtists, nil, []string{randomTrackID}, 80)
 		if err != nil {
 			log.Printf("Error getting recommendations from random song: %v", err)
 			return spotify.Track{}, err
 		}
-
 		if len(recommendedTracks.Tracks) == 0 {
-			continue
+			return spotify.Track{}, &spotify.ErrRecommendationsEmpty{Message: "no recommendations found"}
 		}
 
 		for j := 0; j < 10; j++ {
 			recommendedTrack := recommendedTracks.Tracks[r.IntN(len(recommendedTracks.Tracks))]
+
+			// print the entire recommendedTrack object for inspection
+			fmt.Printf("Recommended Track: %+v\n", recommendedTrack)
 
 			// return the first track found with a preview URL
 			if recommendedTrack.PreviewURL != "" {
 				return recommendedTrack, nil
 			}
 		}
-
+		attempts++
 	}
+	return spotify.Track{}, fmt.Errorf("could not find a recommended track with a preview URL after %d attempts", maxAttempts)
 }
 
 // buildQuiz creates a Quiz object from a given Spotify track and a list

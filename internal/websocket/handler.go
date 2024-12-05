@@ -40,6 +40,12 @@ func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
 	roomID := chi.URLParam(r, "room")
 	password := r.Header.Get("Room-Password")
 	isAdmin := r.Header.Get("Room-Admin") == "true"
+	spotifyToken := r.Header.Get("Spotify-Token")
+
+	// TODO: actually use the token
+	if spotifyToken == "" {
+		spotifyToken = "invalid"
+	}
 
 	// check for missing fields
 	if roomID == "" {
@@ -73,9 +79,13 @@ func (h *Handler) HandleWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	connection := &Connection{
-		ws:    conn,
-		room:  room,
-		admin: isAdmin,
+		ws:   conn,
+		room: room,
+		player: Player{
+			ID: "123", // TODO: get user ID from API using the token
+			// SpotifyToken: spotify.Token{AccessToken: spotifyToken},
+			IsAdmin: isAdmin,
+		},
 	}
 	room.mu.Lock()
 	room.connections[connection] = true

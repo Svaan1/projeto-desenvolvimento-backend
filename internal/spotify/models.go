@@ -1,5 +1,10 @@
 package spotify
 
+import (
+	"strconv"
+	"time"
+)
+
 type Service interface {
 	GetAlbums(albumIds []string) (AlbumResponse, error)
 	GetTracks(trackIds []string) (TrackResponse, error)
@@ -7,6 +12,11 @@ type Service interface {
 	Search(query, queryType string) (SearchResponse, error)
 	RandomSearch(queryType string) (SearchResponse, error)
 	GetRecommendations(seedArtists, seedGenres, seedTracks []string, popularity int) (RecommendationsResponse, error)
+}
+
+type Token struct {
+	AccessToken string
+	Expiration  time.Time
 }
 
 type SpotifyAuthResponse struct {
@@ -68,4 +78,58 @@ type SearchResponse struct {
 
 type RecommendationsResponse struct {
 	Tracks []Track `json:"tracks"`
+}
+
+func (r RecommendationsResponse) String() string {
+	var result string
+	for _, track := range r.Tracks {
+		result += track.String() + " by "
+		for i, artist := range track.Album.Artists {
+			if i > 0 {
+				result += ", "
+			}
+			result += artist.Name
+		}
+		result += "\n"
+	}
+	return result
+}
+
+func (a Album) String() string {
+	var result string
+	result += "Album: " + a.Name + " by "
+	for i, artist := range a.Artists {
+		if i > 0 {
+			result += ", "
+		}
+		result += artist.Name
+	}
+	result += " released on " + a.ReleaseDate + "\n"
+	return result
+}
+
+func (t Track) String() string {
+	var result string
+	result += "Track: " + t.Name + " from album " + t.Album.Name + " by "
+	for i, artist := range t.Album.Artists {
+		if i > 0 {
+			result += ", "
+		}
+		result += artist.Name
+	}
+	result += "\n"
+	return result
+}
+
+func (a Artist) String() string {
+	var result string
+	result += "Artist: " + a.Name + " with genres "
+	for i, genre := range a.Genres {
+		if i > 0 {
+			result += ", "
+		}
+		result += genre
+	}
+	result += " and " + strconv.Itoa(a.Followers.Total) + " followers\n"
+	return result
 }
