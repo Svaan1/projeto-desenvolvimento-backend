@@ -117,7 +117,13 @@ func (s *service) getRandomTrack(artistIDs []string, randomTrackID string) (spot
 	attempts := 0
 	maxAttempts := 10
 	for attempts < maxAttempts {
-		recommendedTracks, err := s.spotifyService.GetRecommendations(artistIDs, nil, []string{randomTrackID}, 80)
+		// limit the number of seeds to 5. 4 artists and the random track
+		seedArtists := artistIDs
+		if len(seedArtists) > 4 {
+			seedArtists = seedArtists[:4]
+		}
+
+		recommendedTracks, err := s.spotifyService.GetRecommendations(seedArtists, nil, []string{randomTrackID}, 80)
 		if err != nil {
 			log.Printf("Error getting recommendations from random song: %v", err)
 			return spotify.Track{}, err
