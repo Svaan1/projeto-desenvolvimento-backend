@@ -19,13 +19,9 @@ const (
 	spotifyTokenURL = "https://accounts.spotify.com/api/token"
 )
 
-type token struct {
-	AccessToken string
-	Expiration  time.Time
-}
 type service struct {
 	client              *http.Client
-	token               token
+	token               Token
 	spotifyClientID     string
 	spotifyClientSecret string
 }
@@ -33,7 +29,7 @@ type service struct {
 func NewService(spotifyClientID, spotifyClientSecret string) *service {
 	return &service{
 		client:              &http.Client{},
-		token:               token{},
+		token:               Token{},
 		spotifyClientID:     spotifyClientID,
 		spotifyClientSecret: spotifyClientSecret,
 	}
@@ -45,7 +41,7 @@ func NewService(spotifyClientID, spotifyClientSecret string) *service {
 // Returns:
 //   - A token object containing the access token and its expiration time.
 //   - An error if the request fails.
-func (s *service) getAccessToken() (*token, error) {
+func (s *service) getAccessToken() (*Token, error) {
 	// check if token is still valid before getting a new one
 	if s.token.AccessToken != "" && time.Now().Before(s.token.Expiration) {
 		return &s.token, nil
@@ -72,7 +68,7 @@ func (s *service) getAccessToken() (*token, error) {
 		return nil, err
 	}
 
-	s.token = token{
+	s.token = Token{
 		AccessToken: spotifyAuthResponse.AccessToken,
 		Expiration:  time.Now().Add(time.Duration(spotifyAuthResponse.ExpiresIn) * time.Second),
 	}
@@ -300,7 +296,7 @@ func (s *service) GetRecommendations(seedArtists, seedGenres, seedTracks []strin
 	if len(seedArtists) == 0 && len(seedGenres) == 0 && len(seedTracks) == 0 {
 		return RecommendationsResponse{}, errors.New("at least one seed parameter is required")
 	}
-	if len(seedArtists) > 5 || len(seedGenres) > 5 || len(seedTracks) > 5 {
+	if len(seedArtists)+len(seedGenres)+len(seedTracks) > 5 {
 		return RecommendationsResponse{}, errors.New("maximum of 5 seed parameters allowed")
 	}
 	if popularity < 0 || popularity > 100 {

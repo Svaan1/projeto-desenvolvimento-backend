@@ -1,6 +1,9 @@
 package spotify
 
-import "strconv"
+import (
+	"strconv"
+	"time"
+)
 
 type Service interface {
 	GetAlbums(albumIds []string) (AlbumResponse, error)
@@ -9,6 +12,11 @@ type Service interface {
 	Search(query, queryType string) (SearchResponse, error)
 	RandomSearch(queryType string) (SearchResponse, error)
 	GetRecommendations(seedArtists, seedGenres, seedTracks []string, popularity int) (RecommendationsResponse, error)
+}
+
+type Token struct {
+	AccessToken string
+	Expiration  time.Time
 }
 
 type SpotifyAuthResponse struct {
